@@ -54,7 +54,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build image for testing
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
@@ -71,7 +71,7 @@ jobs:
           docker run --rm caddy-ionos:test caddy version
 
       - name: Push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           # Ensure this matches your hosts' architecture (docker-ratte and Oracle VM are amd64)
