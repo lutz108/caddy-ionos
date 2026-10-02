@@ -4,7 +4,12 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'Dockerfile'  # Only triggers when your Dockerfile changes
+      - 'Dockerfile'
+      - '.github/workflows/docker.yml'
+  # Weekly rebuild to pick up plugin updates (ionos, l4) and base image rebuilds.
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -21,6 +26,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Read Caddy version from Dockerfile
+        id: version
+        run: |
+          version="$(sed -n 's/^FROM caddy:\([0-9][0-9.]*\)@.*/\1/p' Dockerfile | tail -n1)"
+          [ -n "$version" ] || { echo "no pinned caddy runtime version in Dockerfile"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -36,16 +48,35 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: type=raw,value=latest
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
 
-      - name: Build and push Docker image
+      - name: Build image for testing
         uses: docker/build-push-action@v6
         with:
           context: .
-          # Ensure this matches your Oracle VM architecture (amd64 or arm64)
+          platforms: linux/amd64
+          load: true
+          tags: caddy-ionos:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check that the plugins are compiled in
+        run: |
+          modules="$(docker run --rm caddy-ionos:test caddy list-modules)"
+          echo "$modules" | grep -qx 'dns.providers.ionos'
+          echo "$modules" | grep -qx 'layer4'
+          docker run --rm caddy-ionos:test caddy version
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # Ensure this matches your hosts' architecture (docker-ratte and Oracle VM are amd64)
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
