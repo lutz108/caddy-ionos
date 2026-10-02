@@ -1,12 +1,22 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "docker:pinDigests"],
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
   "timezone": "Europe/Berlin",
+  "schedule": [
+    "on monday"
+  ],
   "packageRules": [
     {
       "description": "Builder and runtime must stay on the same Caddy version",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["caddy"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "caddy"
+      ],
       "groupName": "caddy"
     }
   ]
