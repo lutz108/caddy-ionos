@@ -1,10 +1,10 @@
-FROM caddy:2.11.7-builder@sha256:d842facfd63b960922e57444ff76fd8f0793a66dfdcf481af8026e1f4e6a39b4 AS builder
+FROM caddy:2.11.7-builder@sha256:bf6a7d38add2508b7d2e3e3f40cf2af399214f143c0fa3daa51f254e01f8d293 AS builder
 
 RUN xcaddy build \
     --with github.com/caddy-dns/ionos \
     --with github.com/mholt/caddy-l4
 
 # The image is tagged with this version, keep it in sync with the builder.
-FROM caddy:2.11.7@sha256:685ae3d7c34d9b5f8caeddc5d14051db7bbd88ff1f5a2fa0c16bd8ca328fb7af
+FROM caddy:2.11.7@sha256:5e5286cb37d44086d651a5363f05f43a692ce4d649d88fb1bd844579f45fa9e8
 
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
